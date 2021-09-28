@@ -4,11 +4,15 @@ package com.richDataCo.cache.entity;
 import java.util.Objects;
 
 public class Cache {
-    //private Map<String, Object> cache = new ConcurrentHashMap<>();
-    //private String key;
     private String cacheValue;
     private Long expireTime;
     private Long writeTime;
+
+    public Cache(String cacheValue) {
+        this.cacheValue = cacheValue;
+        writeTime = null;
+        expireTime = null;
+    }
 
     public Long getExpireTime() {
         return expireTime;
@@ -26,21 +30,13 @@ public class Cache {
         this.writeTime = writeTime;
     }
 
-    public Cache(String cacheValue) {
-        //this.key = key;
-        this.cacheValue = cacheValue;
-        writeTime = null;
-        expireTime = null;
-    }
-
     public void setCacheValue(String cacheValue) {
         this.cacheValue = cacheValue;
     }
 
-    Object getCacheValue() {
+    public String getCacheValue() {
         return cacheValue;
     }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -58,10 +54,7 @@ public class Cache {
 
     @Override
     public String toString() {
-        return "Cache{" +
-                "cacheValue='" + cacheValue + '\'' +
-                ", expireTime=" + expireTime +
-                ", writeTime=" + writeTime +
-                '}';
+        return "Cache Value: " + cacheValue +
+                ", expireTime: " + expireTime;
     }
 }

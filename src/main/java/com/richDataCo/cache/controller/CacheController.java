@@ -1,10 +1,6 @@
 package com.richDataCo.cache.controller;
 
-import com.richDataCo.cache.entity.Cache;
 import com.richDataCo.cache.service.CacheService;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +13,7 @@ public class CacheController {
     public CacheController(CacheService cacheService){
         this.cacheService = cacheService;
     }
-    @GetMapping(path = "api/hello")
+    @GetMapping(path = "api/")
     public String hello() {
         return cacheService.hello();
     }
