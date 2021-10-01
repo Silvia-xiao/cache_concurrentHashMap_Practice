@@ -38,7 +38,7 @@ class CacheApplicationTests {
             System.out.println("\n***********With Predefined expire time**********");
             cacheService.storeData(data);
             System.out.println(cacheService.getData(key));
-            Thread.sleep(20000);
+            Thread.sleep(15000);
             System.out.println(cacheService.getData(key));
 
             //Concurrent tests

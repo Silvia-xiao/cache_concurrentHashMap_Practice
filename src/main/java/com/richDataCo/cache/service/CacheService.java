@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -23,9 +25,11 @@ public class CacheService {
     private static volatile Boolean cleanThreadRun;
     private static ReadWriteLock readWriteLock;
     private static Lock writeLock;
+    private static PriorityQueue<Cache> expireQueue;
 
     public CacheService() {
         LOGGER = LoggerFactory.getLogger(CacheService.class);
+        expireQueue = new PriorityQueue<>();
         readWriteLock = new ReentrantReadWriteLock();
         writeLock = readWriteLock.writeLock();
         sleepTime = 20;
@@ -37,16 +41,16 @@ public class CacheService {
     /**
      * Delete the expired data.
      */
-    static void expire() {
-        //A batch of expired data will be deleted together automatically according to the delete thread.
-        for (Map.Entry<String, Cache> entry : cacheObjectMap.entrySet()) {
-            //The data will be expired according to the write time and its expire time.
-            long timoutTime = System.currentTimeMillis() - entry.getValue().getWriteTime();
-            if (entry.getValue().getExpireTime() > timoutTime) {
-                continue;
+    static void expire(long now) {
+        while(true){
+            Cache cache = expireQueue.peek();
+            if (cache == null || cache.getExpireTime() > now ) {
+                //cache not expired
+                break;
             }
-            System.out.println(" Delete outdated data： " + entry.getKey());
-            deleteCache(entry.getKey());
+            deleteCache(cache.getKey());
+            expireQueue.poll();
+            System.out.println(" Delete outdated data： " + cache.getKey());
         }
 
     }
@@ -98,8 +102,10 @@ public class CacheService {
         if (cache == null) {
             return false;
         }
+        if(cache.getExpireTime() < System.currentTimeMillis())
+            return false;
         //Check if the data is out of date.
-        return System.currentTimeMillis() - cache.getWriteTime() < cache.getExpireTime();
+        return true;
     }
 
     /**
@@ -111,17 +117,22 @@ public class CacheService {
         try {
             //Transform the data type and set the value to a cache object.
             jsonObject = new JSONObject(data);
-            Cache cache = new Cache(jsonObject.getString("value"));
-            cache.setWriteTime(System.currentTimeMillis());
+            Cache cacheNew = new Cache(jsonObject.getString("value"));
+            String key = jsonObject.getString("key");
             JSONArray keys = jsonObject.names();
             //If the data input does not have a value of a predefined expire time,
             //it will be assigned a default time of 10 seconds.
             if (keys.length() == 2)
-                cache.setExpireTime(10000L);
-            else
-                cache.setExpireTime(Long.parseLong(jsonObject.getString("expireTime")) * 1000);
-            cacheObjectMap.put(jsonObject.getString("key"), cache);
-            //System.out.println(cacheObjectMap.get(jsonObject.getString ("key")));
+                cacheNew.setExpireTime(System.currentTimeMillis()+10000L);
+            else{
+                cacheNew.setExpireTime(System.currentTimeMillis()+Long.parseLong(jsonObject.getString("expireTime")) * 1000);
+                cacheNew.setTtl(Long.parseLong(jsonObject.getString("expireTime")) * 1000);
+            }
+            Cache cacheOld  = cacheObjectMap.put(key, cacheNew);
+            cacheNew.setKey(key);
+            expireQueue.add(cacheNew);
+            if (cacheOld != null)
+                expireQueue.remove(cacheOld);
         } catch (JSONException err) {
             System.out.println(err.toString());
         } finally {

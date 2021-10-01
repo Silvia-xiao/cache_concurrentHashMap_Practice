@@ -7,11 +7,12 @@ public class DeleteOutdatedData implements Runnable{
     @Override
     public void run() {
         while (true) {
-            System.out.println("clean thread run");
-            CacheService.expire();
+            long now = System.currentTimeMillis();
             try {
+                System.out.println("clean thread run");
+                CacheService.expire(now);
                 TimeUnit.SECONDS.sleep(CacheService.sleepTime);
-            } catch (InterruptedException e) {
+            } catch (NullPointerException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
